@@ -1,2 +1,403 @@
 # guide-signs
-C#
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+using System.Data.OleDb;
+using RoadGuideSignSystem.Entity;
+using GIS;
+using GIS.DisplayPanel;
+using GIS.Network;
+
+namespace RoadGuideSignSystem
+{
+    public partial class Panel4 : Form
+    {
+
+        int RSPanelID;
+        int RSPanelType;
+        public string mdbPath;
+        public string PanelTableName;
+        public string ItemTableName;
+        private string straightDir = "";
+        private OleDbConnection Conn = new OleDbConnection();
+        List<Ety_RSPanel> panelList = new List<Ety_RSPanel>();
+
+        int itemfor = 0;
+
+        int itemleft = 0;
+
+
+        int itemright = 0;
+        int itemloc = 0;
+        public Panel4()
+        {
+            InitializeComponent();
+        }
+
+        public Panel4(int PanelID, int PanelType)
+        {
+            InitializeComponent();
+
+            RSPanelID = PanelID;
+            RSPanelType = PanelType;
+        }
+
+        private void Panel4_Load(object sender, EventArgs e)
+        {
+            int loctionID = DaoManager.ReadIntField(mdbPath, PanelTableName, "RSPanelID", RSPanelID, "RSLocationID");
+            DaoManager.OpenConnection(ref Conn, mdbPath);
+            string strSql = String.Format("select * from {0} where RSPanelID = {1}", ItemTableName, RSPanelID);
+
+            string dir = TopologyManager.GetStraightDir(mdbPath, loctionID);//20121029lf
+
+            OleDbCommand cmditem;
+
+            cmditem = new OleDbCommand();
+
+            OleDbDataReader readitem;
+
+            cmditem.CommandText = strSql;
+
+            cmditem.Connection = Conn;
+
+            readitem = cmditem.ExecuteReader();
+
+            List<Ety_RSItem> itemList = new List<Ety_RSItem>();
+            int itemcont = 0;
+            itemfor = 0;
+            itemleft = 0;
+            itemright = 0;
+            itemloc = 0;
+
+            while (readitem.Read())
+            {
+                Ety_RSItem item = new Ety_RSItem();
+
+                item.DirNum = Convert.ToString(readitem["DirNum"]);
+
+                item.IndObjName = Convert.ToString(readitem["IndObjName"]);
+
+                item.Serial = Convert.ToInt32(readitem["Serial"]);
+
+                itemList.Add(item);
+
+                switch (item.DirNum)
+                {
+                    case "5": itemfor++; break;
+                    case "3": itemleft++; break;
+                    case "7": itemright++; break;
+                    case "01": itemloc++; break;
+                    default: break;
+
+                }
+                itemcont++;
+
+            }
+
+            readitem.Close();
+
+            for (int i = 0; i < itemcont; i++)
+            {
+                #region --------------------十字牌Cross plate-------------------------------
+                if (RSPanelType == 32)
+                {
+                    if (itemList[i].DirNum == "01")
+                    {
+                       label1.Text = itemList[i].IndObjName;
+                        label1.Visible = true;
+                    }
+                    if (itemList[i].DirNum == "3")
+                    {
+                        
+                        if (itemleft == 1)
+                        {
+                            label19.Text = itemList[i].IndObjName;
+                            label19.Visible = true;
+                        }
+                        if (itemleft >= 2)
+                        {
+                            if (itemList[i].Serial == 0)
+                            {
+                                label31.Text = itemList[i].IndObjName;
+                                label31.Visible = true;
+                            }
+                            if (itemList[i].Serial == 1)
+                            {
+                                label2.Text = itemList[i].IndObjName;
+                                label2.Visible = true;
+                            }
+                            if (itemList[i].Serial == 2)
+                            {
+                                label3.Text = itemList[i].IndObjName;
+                                label3.Visible = true;
+                            }
+                        }
+                    }
+
+                    if (itemList[i].DirNum == "7")
+                    {
+                        if (itemright == 1)
+                        {
+                            label20.Text = itemList[i].IndObjName;
+                            label20.Visible = true;
+                        }
+                        if (itemright >= 2)
+                        {
+                            if (itemList[i].Serial == 0)
+                            {
+                                label32.Text = itemList[i].IndObjName;
+                                label32.Visible = true;
+                            }
+                            if (itemList[i].Serial == 1)
+                            {
+                                label7.Text = itemList[i].IndObjName;
+                                label7.Visible = true;
+                            }
+                            if (itemList[i].Serial == 2)
+                            {
+                                label8.Text = itemList[i].IndObjName;
+                                label8.Visible = true;
+                            }
+                        }
+                    }
+
+                    if (itemList[i].DirNum == "5")
+                    {
+                        if (itemfor == 1)
+                        {
+                            label5.Text = itemList[i].IndObjName;
+                            label5.Visible = true;
+                        }
+                        if (itemfor == 2)
+                        {
+                            if (itemList[i].Serial == 1)
+                            {
+                                label4.Text = itemList[i].IndObjName;
+                                label4.Visible = true;
+                            }
+                            if (itemList[i].Serial == 2)
+                            {
+                                label6.Text = itemList[i].IndObjName;
+                                label6.Visible = true;
+                            }
+                        }
+                    }
+                    if (label19.Text == label20.Text && label19.Text != "" && label20.Text != "")
+                    {
+                        if (dir == "北")
+                        {
+                            label19.Text = label19.Text + "(西W)";
+                            label19.Visible = true;
+                            label20.Text = label20.Text + "(东E)";
+                            label20.Visible = true;
+                        }
+                        if (dir == "南")
+                        {
+                            label19.Text = label19.Text + "(东E)";
+                            label19.Visible = true;
+                            label20.Text = label20.Text + "(西W)";
+                            label20.Visible = true;
+                        }
+                        if (dir == "东")
+                        {
+                            label19.Text = label19.Text + "(北N)";
+                            label19.Visible = true;
+                            label20.Text = label20.Text + "(南S)";
+                            label20.Visible = true;
+                        }
+                        if (dir == "西")
+                        {
+                            label19.Text = label19.Text + "(南S)";
+                            label19.Visible = true;
+                            label20.Text = label20.Text + "(北N)";
+                            label20.Visible = true;
+                        }
+                    }
+                    if (label19.Text == label7.Text)
+                    {
+                        if (dir == "北")
+                        {
+                            label19.Text = label19.Text + "(西W)";
+                            label19.Visible = true;
+                            label7.Text = label7.Text + "(东E)";
+                            label7.Visible = true;
+                        }
+                        if (dir == "南")
+                        {
+                            label19.Text = label19.Text + "(东E)";
+                            label19.Visible = true;
+                            label7.Text = label7.Text + "(西W)";
+                            label7.Visible = true;
+                        }
+                        if (dir == "东")
+                        {
+                            label19.Text = label19.Text + "(北N)";
+                            label19.Visible = true;
+                            label7.Text = label7.Text + "(南)";
+                            label7.Visible = true;
+                        }
+                        if (dir == "西")
+                        {
+                            label19.Text = label19.Text + "(南S)";
+                            label19.Visible = true;
+                            label7.Text = label7.Text + "(北N)";
+                            label7.Visible = true;
+                        }
+                    }
+                    if (label2.Text == label7.Text)
+                    {
+                        if (dir == "北")
+                        {
+                            label2.Text = label2.Text + "(西W)";
+                            label2.Visible = true;
+                            label7.Text = label7.Text + "(东E)";
+                            label7.Visible = true;
+                        }
+                        if (dir == "南")
+                        {
+                            label2.Text = label2.Text + "(东E)";
+                            label2.Visible = true;
+                            label7.Text = label7.Text + "(西W)";
+                            label7.Visible = true;
+                        }
+                        if (dir == "东")
+                        {
+                            label2.Text = label2.Text + "(北N)";
+                            label2.Visible = true;
+                            label7.Text = label7.Text + "(南S)";
+                            label7.Visible = true;
+                        }
+                        if (dir == "西")
+                        {
+                            label2.Text = label2.Text + "(南S)";
+                            label2.Visible = true;
+                            label7.Text = label7.Text + "(北N)";
+                            label7.Visible = true;
+                        }
+                    }
+
+                    if (label2.Text == label20.Text)
+                    {
+                        if (dir == "北")
+                        {
+                            label2.Text = label2.Text + "(西)";
+                            label2.Visible = true;
+                            label20.Text = label20.Text + "(东)";
+                            label20.Visible = true;
+                        }
+                        if (dir == "南")
+                        {
+                            label2.Text = label2.Text + "(东)";
+                            label2.Visible = true;
+                            label20.Text = label20.Text + "(西)";
+                            label20.Visible = true;
+                        }
+                        if (dir == "东")
+                        {
+                            label2.Text = label2.Text + "(北)";
+                            label2.Visible = true;
+                            label20.Text = label20.Text + "(南)";
+                            label20.Visible = true;
+                        }
+                        if (dir == "西")
+                        {
+                            label2.Text = label2.Text + "(南)";
+                            label2.Visible = true;
+                            label20.Text = label20.Text + "(北)";
+                            label20.Visible = true;
+                        }
+                    }
+
+                    if (label3.Text == label8.Text)
+                    {
+                        if (dir == "北")
+                        {
+                            label3.Text = label3.Text + "(西)";
+                            label3.Visible = true;
+                            label8.Text = label8.Text + "(东)";
+                            label8.Visible = true;
+                        }
+                        if (dir == "南")
+                        {
+                            label3.Text = label3.Text + "(东)";
+                            label3.Visible = true;
+                            label8.Text = label8.Text + "(西)";
+                            label8.Visible = true;
+                        }
+                        if (dir == "东")
+                        {
+                            label3.Text = label3.Text + "(北)";
+                            label3.Visible = true;
+                            label8.Text = label8.Text + "(南)";
+                            label8.Visible = true;
+                        }
+                        if (dir == "西")
+                        {
+                            label3.Text = label3.Text + "(南)";
+                            label3.Visible = true;
+                            label8.Text = label8.Text + "(北)";
+                            label8.Visible = true;
+                        }
+                    }
+                }
+                #endregion --------------------十字牌-------------------------------
+            }
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+
+            Pen p1 = new Pen(Color.White, 20);
+            Pen p3 = new Pen(Color.White, 20);
+            Pen p2 = new Pen(Color.White, 10);
+            Pen p4 = new Pen(Color.White, 8);
+            Pen pNorth = new Pen(Color.White, 5);
+
+            if (RSPanelType == 32)//all
+            {
+                Point[] cross_x = DrawSignal.GetCross_Horizonal(180, 200);
+                Point[] cross_y = DrawSignal.GetCross_Vertical(180, 200);
+                e.Graphics.DrawPolygon(p1, cross_x);
+                e.Graphics.DrawPolygon(p1, cross_y);
+                DrawSignal.GetLeftTopArc(180, 200, e, p3);
+                DrawSignal.GetRightTopArc(180, 200, e, p3);
+                DrawSignal.GetRightBottomArc(180, 200, e, p3);
+                DrawSignal.GetLeftBottomArc(180, 200, e, p3);
+            }
+
+            e.Graphics.DrawRectangle(p2, 5, 5, 674, 301);
+            
+            //绘制指北针
+            Point[] compass = DrawSignal.GetCompass(35, 42);
+            e.Graphics.DrawPolygon(pNorth, compass);
+
+            int loctionID = DaoManager.ReadIntField(mdbPath, PanelTableName, "RSPanelID", RSPanelID, "RSLocationID");
+
+            string dir = TopologyManager.GetStraightDir(mdbPath, loctionID);
+            label25.Text = dir;
+            label25.Visible = true;
+            //e.Graphics.DrawLine(p2, new Point(0, 5), new Point(695, 5));
+
+            //e.Graphics.DrawLine(p2, new Point(5, 5), new Point(5, 345));
+
+            //e.Graphics.DrawLine(p2, new Point(5, 345), new Point(695, 345));
+
+            //e.Graphics.DrawLine(p2, new Point(695, 345), new Point(695, 5));
+        }
+
+        private void Panel4_MouseClick(object sender, MouseEventArgs e)
+        {
+            int screen_X = e.X;
+            int screen_Y = e.Y;
+        }
+
+
+    }
+}
+
